@@ -1,8 +1,8 @@
 package src;
-
+import java.util.*;
 public class Common {
 
-  static public int s2i (String s) {
+  static public int configurationTokenToInteger (String s) {
     int i = 0;
 
     try {
@@ -14,7 +14,7 @@ public class Common {
   }
 
   static public double R1 () {
-    java.util.Random generator = new java.util.Random(System.currentTimeMillis());
+    Random generator = new Random(System.currentTimeMillis());
     double U = generator.nextDouble();
     while (U < 0 || U >= 1) {
       U = generator.nextDouble();
