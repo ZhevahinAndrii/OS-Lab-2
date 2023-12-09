@@ -11,8 +11,7 @@ import java.io.*;
 import java.util.*;
 import java.util.ArrayList;
 public class Scheduling {
-
-  private static int processNum = 5;
+  private static int processNum = 3;
   private static int meanDev = 1000;
   private static int standardDev = 100;
   private static int runtime = 1000;
@@ -20,15 +19,16 @@ public class Scheduling {
   private static Results result = new Results("null","null",0);
   private static final String resultsFile = "Results\\Summary-Results";
 
-  private static void Init(String file) {
+  private static void readConfig(String file) {
     File f = new File(file);
-    int cputime = 0;
-    int ioblocking = 0;
-    double X = 0.0;
+    int cputime;
+    int ioblocking;
+    double X;
 
     try {
 
       Scanner configuration_in = new Scanner(f);
+      int nextProcessIndex=0;
       while(configuration_in.hasNextLine()){
         String line = configuration_in.nextLine();
         if (line.startsWith("numprocess")) {
@@ -56,7 +56,8 @@ public class Scheduling {
           }
           X = X * standardDev;
           cputime = (int)X + meanDev;
-          processes.add(new sProcess(cputime, ioblocking, 0, 0, 0));
+          processes.add(new sProcess(nextProcessIndex, cputime, ioblocking, 0, 0,0));
+          nextProcessIndex++;
         }
         if (line.startsWith("runtime")) {
           StringTokenizer st = new StringTokenizer(line);
@@ -68,19 +69,11 @@ public class Scheduling {
     } catch (FileNotFoundException e) {
         System.out.println("There is no such a file to read configuration from");
     }
-    System.out.println("processnum " + processNum);
-    System.out.println("meandev " + meanDev);
-    System.out.println("standdev " + standardDev);
-    for (int i = 0; i < processes.size(); i++) {
-      sProcess process = processes.get(i);
-      System.out.println("process " + i + " " + process.cputime + " " + process.ioblocking + " " + process.cpudone + " " + process.numblocked);
-    }
-    System.out.println("runtime " + runtime);
   }
 
   public static void main(String[] args) {
-    int i = 0;
-    File configuration_file = null;
+    int i;
+    File configuration_file;
     if(args.length==0)
       configuration_file = new File("scheduling.conf");
     else{
@@ -95,7 +88,7 @@ public class Scheduling {
       System.exit(-1);
     }
     System.out.println("Working...");
-    Init(configuration_file.getName());
+    readConfig(configuration_file.getName());
     if (processes.size() < processNum) {
       i = 0;
       while (processes.size() < processNum) {
@@ -105,41 +98,50 @@ public class Scheduling {
           }
           X = X * standardDev;
         int cputime = (int) X + meanDev;
-        processes.add(new sProcess(cputime,i*100,0,0,0));
+        processes.add(new sProcess(i,cputime,i*100,0,0,0));
         i++;
       }
     }
     result = new SchedulingAlgorithm(processes).run(runtime, result);
-    PrintStream out = null;
-    try {
-      //BufferedWriter out = new BufferedWriter(new FileWriter(resultsFile));
-      out = new PrintStream(new FileOutputStream(resultsFile));
-      out.println("Scheduling Type: " + result.schedulingType);
-      out.println("Scheduling Name: " + result.schedulingName);
-      out.println("Simulation Run Time: " + result.compuTime);
-      out.println("Mean: " + meanDev);
-      out.println("Standard Deviation: " + standardDev);
-      out.println("src.Process #\tCPU Time\tIO Blocking\tCPU Completed\tCPU Blocked");
-      for (i = 0; i < processes.size(); i++) {
-        sProcess process = processes.get(i);
-        out.print(i);
-        if (i < 100) { out.print("\t\t"); } else { out.print("\t"); }
-        out.print(process.cputime);
-        if (process.cputime < 100) { out.print(" (ms)\t\t"); } else { out.print(" (ms)\t"); }
-        out.print(process.ioblocking);
-        if (process.ioblocking < 100) { out.print(" (ms)\t\t"); } else { out.print(" (ms)\t"); }
-        out.print(process.cpudone);
-        if (process.cpudone < 100) { out.print(" (ms)\t\t"); } else { out.print(" (ms)\t"); }
-        out.println(process.numblocked + " times");
+      try (PrintStream out = new PrintStream(new FileOutputStream(resultsFile))) {
+          //BufferedWriter out = new BufferedWriter(new FileWriter(resultsFile));
+          out.println("Scheduling Type: " + result.schedulingType);
+          out.println("Scheduling Name: " + result.schedulingName);
+          out.println("Simulation Run Time: " + result.compuTime);
+          out.println("Mean: " + meanDev);
+          out.println("Standard Deviation: " + standardDev);
+          out.println("Process #\tCPU Time\tIO Blocking\tCPU Completed\tCPU Blocked");
+          for (i = 0; i < processes.size(); i++) {
+              sProcess process = processes.get(i);
+              out.print(i);
+              if (i < 100) {
+                  out.print("\t\t");
+              } else {
+                  out.print("\t");
+              }
+              out.print(process.cputime);
+              if (process.cputime < 100) {
+                  out.print(" (ms)\t\t");
+              } else {
+                  out.print(" (ms)\t");
+              }
+              out.print(process.ioblocking);
+              if (process.ioblocking < 100) {
+                  out.print(" (ms)\t\t");
+              } else {
+                  out.print(" (ms)\t");
+              }
+              out.print(process.cpudone);
+              if (process.cpudone < 100) {
+                  out.print(" (ms)\t\t");
+              } else {
+                  out.print(" (ms)\t");
+              }
+              out.println(process.numblocked + " times");
+          }
+      } catch (FileNotFoundException e) {
+          System.out.println("Couldn't find a file to write results");
       }
-    } catch (FileNotFoundException e) {
-        System.out.println("Couldn't find a file to write results");
-    }
-    finally {
-      if(out!=null){
-        out.close();
-      }
-    }
   System.out.println("Completed.");
   }
 }

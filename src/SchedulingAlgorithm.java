@@ -5,13 +5,17 @@ package src;
 import java.util.ArrayList;
 import java.util.List;
 import java.io.*;
-
+import java.util.Random;
 public class SchedulingAlgorithm {
+  private final static Random random = new Random();
   PrintStream out;
   private List<sProcess> processes;
+  private List<sProcess> tickets = new ArrayList<>();
+  private int currentProcessIndex=0;
+  public static int quantumTime = 20;
 
   public SchedulingAlgorithm(List<sProcess> processes) {
-    this.processes = processes;
+
     String resultsFile = "Results\\Summary-Processes";
     try {
       out = new PrintStream(new FileOutputStream(resultsFile));
@@ -19,65 +23,51 @@ public class SchedulingAlgorithm {
       System.out.println("It is impossible to open such a file to write summary of processes work");
       throw new RuntimeException(e);
     }
+    this.processes = processes;
+    for(sProcess process:processes){
+      for(int i=0;i<process.weight;i++){
+        tickets.add(process);
+      }
+    }
   }
-
-  void printProcess(int number_of_process, String state) {
-    sProcess process = processes.get(number_of_process);
-    String processString = String.format("Process %d: %s (%s)", number_of_process, state, process.toString());
+  public sProcess selectProcess(){
+    int i = random.nextInt(tickets.size());
+    sProcess selectedProcess = tickets.get(i);
+    printProcess(selectedProcess,"registered");
+    return selectedProcess;
+  }
+  void printProcess(sProcess process, String state) {
+    String processString = String.format("Process %d: %s (%s)", process.indexOfProcess, state, process.toString());
     out.println(processString);
   }
 
   public Results run(int runtime, Results result) {
-    int i = 0;
+
+
+    result.schedulingType = "Preemptive";
+    result.schedulingName = "Lottery";
     int comptime = 0;
-    int currentProcess = 0;
-    int previousProcess = 0;
-    int size = processes.size();
     int completed = 0;
 
-    result.schedulingType = "Batch (Nonpreemptive)";
-    result.schedulingName = "First-Come First-Served";
-
-
-    printProcess(currentProcess, "registered");
-    sProcess process = processes.get(currentProcess);
-    while (comptime < runtime) {
-      if (process.cpudone == process.cputime) {
+    while(comptime<=runtime){
+      sProcess process = selectProcess();
+      process.cpudone+=quantumTime;
+      process.ionext+=quantumTime;
+      if(process.isCompleted()){
         completed++;
-        printProcess(currentProcess, "completed");
-        if (completed == size) {
-          result.compuTime = comptime;
-          out.close();
+        printProcess(process,"completed");
+        if(completed== processes.size()){
+          result.compuTime=comptime;
           return result;
         }
-        for (i = size - 1; i >= 0; i--) {
-          process = processes.get(i);
-          if (process.cpudone < process.cputime) {
-            currentProcess = i;
-          }
-        }
-        process = processes.get(currentProcess);
-        printProcess(currentProcess, "registered");
+        tickets.removeIf(ticket_process->ticket_process.indexOfProcess == process.indexOfProcess);
       }
-      if (process.ioblocking == process.ionext) {
-        printProcess(currentProcess, "I/O blocked");
-        process.numblocked++;
-        process.ionext = 0;
-        previousProcess = currentProcess;
-        for (i = size - 1; i >= 0; i--) {
-          process = processes.get(i);
-          if (process.cpudone < process.cputime && previousProcess != i) {
-            currentProcess = i;
-          }
-        }
-        process = processes.get(currentProcess);
-        printProcess(currentProcess, "registered");
+      if(process.isIOBlocked()){
+        printProcess(process,"I/O blocked");
+          process.numblocked++;
+          process.ionext=0;
       }
-      process.cpudone++;
-      if (process.ioblocking > 0) {
-          process.ionext++;
-      }
-      comptime++;
+      comptime+=quantumTime;
     }
     result.compuTime = comptime;
     return result;
