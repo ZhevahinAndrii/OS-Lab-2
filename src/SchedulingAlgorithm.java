@@ -2,76 +2,82 @@
 // the scheduling algorithm written by the user resides.
 // User modification should occur within the Run() function.
 package src;
-import src.Results;
-
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Vector;
 import java.io.*;
 
 public class SchedulingAlgorithm {
-  static void printProcess(PrintStream out,int number,String state,sProcess process){
-    String processString = String.format("Process %d: %s (%s)",number,state,process.toString());
+  PrintStream out;
+  private List<sProcess> processes;
+
+  public SchedulingAlgorithm(List<sProcess> processes) {
+    this.processes = processes;
+    String resultsFile = "Results\\Summary-Processes";
+    try {
+      out = new PrintStream(new FileOutputStream(resultsFile));
+    } catch (FileNotFoundException e) {
+      System.out.println("It is impossible to open such a file to write summary of processes work");
+      throw new RuntimeException(e);
+    }
+  }
+
+  void printProcess(int number_of_process, String state) {
+    sProcess process = processes.get(number_of_process);
+    String processString = String.format("Process %d: %s (%s)", number_of_process, state, process.toString());
     out.println(processString);
   }
 
-  public static Results Run(int runtime, List<sProcess> processVector, Results result) {
+  public Results run(int runtime, Results result) {
     int i = 0;
     int comptime = 0;
     int currentProcess = 0;
     int previousProcess = 0;
-    int size = processVector.size();
+    int size = processes.size();
     int completed = 0;
-    String resultsFile = "Results\\Summary-Processes";
 
     result.schedulingType = "Batch (Nonpreemptive)";
-    result.schedulingName = "First-Come First-Served"; 
-    try {
+    result.schedulingName = "First-Come First-Served";
 
-      PrintStream out = new PrintStream(new FileOutputStream(resultsFile));
-      sProcess process = (sProcess) processVector.elementAt(currentProcess);
-      printProcess(out,currentProcess,"registered", process);
-      while (comptime < runtime) {
-        if (process.cpudone == process.cputime) {
-          completed++;
-          printProcess(out,currentProcess, "completed",process);
-          if (completed == size) {
-            result.compuTime = comptime;
-            out.close();
-            return result;
-          }
-          for (i = size - 1; i >= 0; i--) {
-            process = processVector.elementAt(i);
-            if (process.cpudone < process.cputime) { 
-              currentProcess = i;
-            }
-          }
-          process = processVector.elementAt(currentProcess);
-          printProcess(out,currentProcess,"I/O blocked",process);
-          }
-        if (process.ioblocking == process.ionext) {
-          printProcess(out,currentProcess,"I/O blocked",process);
-          process.numblocked++;
-          process.ionext = 0; 
-          previousProcess = currentProcess;
-          for (i = size - 1; i >= 0; i--) {
-            process = processVector.elementAt(i);
-            if (process.cpudone < process.cputime && previousProcess != i) { 
-              currentProcess = i;
-            }
-          }
-          process = processVector.get(currentProcess);
-          printProcess(out,currentProcess,"registered",process);
+
+    printProcess(currentProcess, "registered");
+    sProcess process = processes.get(currentProcess);
+    while (comptime < runtime) {
+      if (process.cpudone == process.cputime) {
+        completed++;
+        printProcess(currentProcess, "completed");
+        if (completed == size) {
+          result.compuTime = comptime;
+          out.close();
+          return result;
         }
-        process.cpudone++;       
-        if (process.ioblocking > 0) {
-          process.ionext++;
+        for (i = size - 1; i >= 0; i--) {
+          process = processes.get(i);
+          if (process.cpudone < process.cputime) {
+            currentProcess = i;
+          }
         }
-        comptime++;
+        process = processes.get(currentProcess);
+        printProcess(currentProcess, "registered");
       }
-      out.close();
-    } catch (FileNotFoundException e) {
-      System.out.println("There is no such a file to write summary for processes");
+      if (process.ioblocking == process.ionext) {
+        printProcess(currentProcess, "I/O blocked");
+        process.numblocked++;
+        process.ionext = 0;
+        previousProcess = currentProcess;
+        for (i = size - 1; i >= 0; i--) {
+          process = processes.get(i);
+          if (process.cpudone < process.cputime && previousProcess != i) {
+            currentProcess = i;
+          }
+        }
+        process = processes.get(currentProcess);
+        printProcess(currentProcess, "registered");
+      }
+      process.cpudone++;
+      if (process.ioblocking > 0) {
+          process.ionext++;
+      }
+      comptime++;
     }
     result.compuTime = comptime;
     return result;

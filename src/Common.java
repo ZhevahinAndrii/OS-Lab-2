@@ -1,7 +1,6 @@
 package src;
 import java.util.*;
 public class Common {
-
   static public int configurationTokenToInteger (String s) {
     int i = 0;
 

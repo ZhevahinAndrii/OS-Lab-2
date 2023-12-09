@@ -22,7 +22,6 @@ public class Scheduling {
 
   private static void Init(String file) {
     File f = new File(file);
-    String tmp;
     int cputime = 0;
     int ioblocking = 0;
     double X = 0.0;
@@ -110,7 +109,7 @@ public class Scheduling {
         i++;
       }
     }
-    result = SchedulingAlgorithm.Run(runtime, processes, result);
+    result = new SchedulingAlgorithm(processes).run(runtime, result);
     PrintStream out = null;
     try {
       //BufferedWriter out = new BufferedWriter(new FileWriter(resultsFile));
@@ -122,7 +121,7 @@ public class Scheduling {
       out.println("Standard Deviation: " + standardDev);
       out.println("src.Process #\tCPU Time\tIO Blocking\tCPU Completed\tCPU Blocked");
       for (i = 0; i < processes.size(); i++) {
-        sProcess process = processes.elementAt(i);
+        sProcess process = processes.get(i);
         out.print(i);
         if (i < 100) { out.print("\t\t"); } else { out.print("\t"); }
         out.print(process.cputime);
