@@ -3,11 +3,11 @@ package src;
 public class Results {
   public String schedulingType;
   public String schedulingName;
-  public int compuTime;
+  public int computationTime;
 
-  public Results (String schedulingType, String schedulingName, int compuTime) {
+  public Results (String schedulingType, String schedulingName, int computationTime) {
     this.schedulingType = schedulingType;
     this.schedulingName = schedulingName;
-    this.compuTime = compuTime;
+    this.computationTime = computationTime;
   } 	
 }

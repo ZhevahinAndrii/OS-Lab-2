@@ -11,18 +11,19 @@ import java.io.*;
 import java.util.*;
 import java.util.ArrayList;
 public class Scheduling {
-  private static int processNum = 3;
-  private static int meanDev = 1000;
-  private static int standardDev = 100;
-  private static int runtime = 1000;
-  private static final List<sProcess> processes = new ArrayList<>();
-  private static Results result = new Results("null","null",0);
-  private static final String resultsFile = "Results\\Summary-Results";
+    private static int processNum = 3;
+    private static int meanDev = 1000;
+    private static int standardDev = 100;
+    private static int runtime = 1000;
+    private static final List<Process> processes = new ArrayList<>();
+    private static Results result = new Results("null","null",0);
+    private static final String resultsFile = "Results\\Summary-Results";
 
   private static void readConfig(String file) {
     File f = new File(file);
     int cputime;
     int ioblocking;
+    int weight;
     double X;
 
     try {
@@ -50,13 +51,14 @@ public class Scheduling {
           StringTokenizer st = new StringTokenizer(line);
           st.nextToken();
           ioblocking = Common.configurationTokenToInteger(st.nextToken());
+          weight = Common.configurationTokenToInteger(st.nextToken());
           X = Common.R1();
           while (X == -1.0) {
             X = Common.R1();
           }
           X = X * standardDev;
           cputime = (int)X + meanDev;
-          processes.add(new sProcess(nextProcessIndex, cputime, ioblocking, 0, 0,0));
+          processes.add(new Process(nextProcessIndex, cputime, ioblocking,weight));
           nextProcessIndex++;
         }
         if (line.startsWith("runtime")) {
@@ -89,30 +91,17 @@ public class Scheduling {
     }
     System.out.println("Working...");
     readConfig(configuration_file.getName());
-    if (processes.size() < processNum) {
-      i = 0;
-      while (processes.size() < processNum) {
-          double X = Common.R1();
-          while (X == -1.0) {
-            X = Common.R1();
-          }
-          X = X * standardDev;
-        int cputime = (int) X + meanDev;
-        processes.add(new sProcess(i,cputime,i*100,0,0,0));
-        i++;
-      }
-    }
     result = new SchedulingAlgorithm(processes).run(runtime, result);
-      try (PrintStream out = new PrintStream(new FileOutputStream(resultsFile))) {
-          //BufferedWriter out = new BufferedWriter(new FileWriter(resultsFile));
+    try (PrintStream out = new PrintStream(new FileOutputStream(resultsFile))) {
           out.println("Scheduling Type: " + result.schedulingType);
           out.println("Scheduling Name: " + result.schedulingName);
-          out.println("Simulation Run Time: " + result.compuTime);
+          out.println("Number of processes: "+processNum);
+          out.println("Simulation Run Time: " + result.computationTime);
           out.println("Mean: " + meanDev);
           out.println("Standard Deviation: " + standardDev);
           out.println("Process #\tCPU Time\tIO Blocking\tCPU Completed\tCPU Blocked");
           for (i = 0; i < processes.size(); i++) {
-              sProcess process = processes.get(i);
+              Process process = processes.get(i);
               out.print(i);
               if (i < 100) {
                   out.print("\t\t");
