@@ -10,7 +10,7 @@ public class SchedulingAlgorithm {
   private final static Random random = new Random();
   PrintStream out;
   private final List<Process> processes;
-  private final List<Process>  tickets = new ArrayList<>();
+  private final List<Process> tickets = new ArrayList<>();
   public static int quantumTime = 50;
 
   public SchedulingAlgorithm(List<Process> processes) {
@@ -48,13 +48,6 @@ public class SchedulingAlgorithm {
 
     while(comptime<=runtime){
       Process process = selectProcess();
-      if(process.isIOBlocked()){
-        process.numblocked++;
-        process.ionext=0;
-        printProcess(process,"I/O blocked");
-        comptime+=10;
-        continue;
-      }
       if(process.timeToBlocking()<=quantumTime){
         if(process.timeToComplete()<=process.timeToBlocking()){
           comptime+=process.timeToComplete();
@@ -64,7 +57,10 @@ public class SchedulingAlgorithm {
         else if(process.timeToComplete()>process.timeToBlocking()){
           comptime+=process.timeToBlocking();
           process.cpudone+=process.timeToBlocking();
-          process.ionext+=process.timeToBlocking();
+          process.ionext=0;
+          process.numblocked++;
+          printProcess(process,"I/O blocked");
+          comptime+=10;
         }
       }
       else if (process.timeToComplete()<=quantumTime && process.timeToBlocking()>quantumTime){
